@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Welcome to Better Prompts</title>
+    <title>Meta Ads Analytics MCP</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
@@ -13,20 +13,30 @@
     <div class="w-full max-w-lg">
 
         <div class="text-center mb-8">
-            <h1 class="text-2xl sm:text-3xl font-bold text-gray-800">Welcome to MCP Boilerplate</h1>
+            <h1 class="text-2xl sm:text-3xl font-bold text-gray-800">Meta Ads Reporting for MCP</h1>
+            <p class="mt-2 text-sm text-gray-500">Login with Google or GitHub, unlock paid tiers with Stripe, and stream Meta Ads insights straight into your MCP-compatible assistant.</p>
         </div>
 
         <div class="bg-white border border-gray-200 rounded-xl shadow-2xs">
-            <div class="p-5 sm:p-7">
-                <p class="text-md text-gray-600 text-center">
-                    This is a simple example of an index page for the MCP boilerplate.
+            <div class="p-5 sm:p-7 space-y-4">
+                <p class="text-md text-gray-700">
+                    This worker ships with the same analytics entry points as the <span class="font-semibold">pipeboard-co/meta-ads-mcp</span> reference server:
+                </p>
+                <ul class="list-disc list-inside text-sm text-gray-600 space-y-2 text-left">
+                    <li><span class="font-medium">Account overview</span> – free summaries of spend, reach, and balance.</li>
+                    <li><span class="font-medium">Campaign &amp; ad set insights</span> – subscription-gated performance breakdowns.</li>
+                    <li><span class="font-medium">Ad-level analytics</span> – metered usage that charges after the free tier.</li>
+                    <li><span class="font-medium">Async report status</span> – monitor long-running exports in real time.</li>
+                </ul>
+                <p class="text-sm text-gray-600">
+                    Configure your Meta Business system user token, default ad account, and Stripe price IDs in <code>.dev.vars</code> to start streaming reports.
                 </p>
             </div>
         </div>
 
         <div class="text-center mt-6">
-            <p class="text-xs text-gray-600">
-                Some Ts and Cs here. Maybe a link to a privacy policy.
+            <p class="text-xs text-gray-500">
+                Need help? Check the README for full setup instructions.
             </p>
         </div>
 
