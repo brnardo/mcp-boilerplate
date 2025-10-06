@@ -7,7 +7,13 @@ import {
   } from '@stripe/agent-toolkit/cloudflare';
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import stripeWebhookHandler from "./webhooks/stripe";
-import * as tools from './tools';
+import {
+        metaAdsAccountOverviewTool,
+        metaAdsCampaignInsightsTool,
+        metaAdsAdSetInsightsTool,
+        metaAdsAdInsightsTool,
+        metaAdsAsyncReportStatusTool,
+} from './tools';
 
 type State = PaymentState & {};
 
@@ -23,35 +29,32 @@ export class BoilerplateMCP extends PaidMcpAgent<Env, State, AgentProps> {
 		version: "1.0.0",
 	});
 
-	async init() {
-		// Example free tools (that don't require payment but do require a logged in user)
-		tools.addTool(this);
-		tools.calculateTool(this);
+        async init() {
+                const metaConfig = {
+                        META_ADS_SYSTEM_USER_TOKEN: this.env.META_ADS_SYSTEM_USER_TOKEN,
+                        META_ADS_API_VERSION: this.env.META_ADS_API_VERSION,
+                        META_ADS_DEFAULT_ACCOUNT_ID: this.env.META_ADS_DEFAULT_ACCOUNT_ID,
+                        META_ADS_BUSINESS_ID: this.env.META_ADS_BUSINESS_ID,
+                } as const;
 
-		// Example of a free tool that checks for active subscriptions and the status of the logged in user's Stripe customer ID
-		tools.checkPaymentHistoryTool(this, {
-			BASE_URL: this.env.BASE_URL,
-			STRIPE_SECRET_KEY: this.env.STRIPE_SECRET_KEY
-		});
-
-		// Example of a paid tool that requires a logged in user and a one-time payment
-		tools.onetimeAddTool(this, {
-			STRIPE_ONE_TIME_PRICE_ID: this.env.STRIPE_ONE_TIME_PRICE_ID,
-			BASE_URL: this.env.BASE_URL
-		});
-
-		// Example of a paid tool that requires a logged in user and a subscription
-		tools.subscriptionTool(this, {
-			STRIPE_SUBSCRIPTION_PRICE_ID: this.env.STRIPE_SUBSCRIPTION_PRICE_ID,
-			BASE_URL: this.env.BASE_URL
-		});
-
-		// Example of a paid tool that requires a logged in user and a subscription with metered usage
-		tools.meteredAddTool(this, {
-			STRIPE_METERED_PRICE_ID: this.env.STRIPE_METERED_PRICE_ID,
-			BASE_URL: this.env.BASE_URL
-		});
-	}
+                metaAdsAccountOverviewTool(this, metaConfig);
+                metaAdsCampaignInsightsTool(this, {
+                        ...metaConfig,
+                        STRIPE_SUBSCRIPTION_PRICE_ID: this.env.STRIPE_SUBSCRIPTION_PRICE_ID,
+                        BASE_URL: this.env.BASE_URL,
+                });
+                metaAdsAdSetInsightsTool(this, {
+                        ...metaConfig,
+                        STRIPE_SUBSCRIPTION_PRICE_ID: this.env.STRIPE_SUBSCRIPTION_PRICE_ID,
+                        BASE_URL: this.env.BASE_URL,
+                });
+                metaAdsAdInsightsTool(this, {
+                        ...metaConfig,
+                        STRIPE_METERED_PRICE_ID: this.env.STRIPE_METERED_PRICE_ID,
+                        BASE_URL: this.env.BASE_URL,
+                });
+                metaAdsAsyncReportStatusTool(this, metaConfig);
+        }
 }
 
 // Create an OAuth provider instance for auth routes

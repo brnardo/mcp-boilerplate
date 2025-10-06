@@ -1,6 +1,6 @@
 # MCP Boilerplate: Simple Setup Guide
 
-This project helps you create your own remote MCP server on Cloudflare with user login and payment options. You don't need to be a technical expert to get it running.
+This project helps you create your own remote MCP server on Cloudflare with user login, payment options, and ready-to-use Meta Ads performance analytics. You don't need to be a technical expert to get it running.
 
 > [!NOTE]
 > This project is now free to use and open source. If you want to support me, just follow me on X [@iannuttall](https://x.com/iannuttall) and subscribe to [my newsletter](https://ian.is).
@@ -11,6 +11,7 @@ This project helps you create your own remote MCP server on Cloudflare with user
 - An MCP server that works with Cursor, Claude and other AI assistants
 - User login with Google or GitHub
 - Payment processing with Stripe
+- Built-in Meta Ads analytics tools for account, campaign, ad set, and ad level reporting (with async report status checks)
 - The ability to create both free and paid MCP tools
 
 ## Setup Checklist
@@ -159,17 +160,17 @@ STRIPE_METERED_PRICE_ID="your-stripe-metered-price-id"
 
 ### Step 5a: Configuring the Stripe Customer Billing Portal
 
-This boilerplate includes a tool (`check_user_subscription_status`) that can provide your end-users with a link to their Stripe Customer Billing Portal. This portal allows them to manage their subscriptions, such as canceling them or, if you configure it, switching between different plans.
+The subscription-gated analytics tools (for example `meta_ads_campaign_insights`) rely on Stripe's customer billing portal so your users can manage their plans. When a user asks for a paid insight the agent will guide them to open the checkout or portal URL.
 
 **Initial Setup (Important):**
 
 By default, the Stripe Customer Billing Portal might not be fully configured in your Stripe account, especially in the test environment.
 
-1.  After setting up your Stripe keys and products (Step 5) and running your server, you can test the `check_user_subscription_status` tool (e.g., via MCP Inspector, or by triggering it through an AI assistant).
-2.  If the tool returns a JSON response where `billingPortal.message` contains an error like: *"Could not generate a link to the customer billing portal: No configuration provided and your test mode default configuration has not been created. Provide a configuration or create your default by saving your customer portal settings in test mode at https://dashboard.stripe.com/test/settings/billing/portal."*
+1.  After setting up your Stripe keys and products (Step 5) and running your server, trigger a subscription-gated tool such as `meta_ads_campaign_insights` (via MCP Inspector or an AI assistant).
+2.  If the agent surfaces an error where `billingPortal.message` contains text like: *"Could not generate a link to the customer billing portal: No configuration provided and your test mode default configuration has not been created. Provide a configuration or create your default by saving your customer portal settings in test mode at https://dashboard.stripe.com/test/settings/billing/portal."*
 3.  You **must** visit the URL provided in that error message (usually `https://dashboard.stripe.com/test/settings/billing/portal`) and save your portal settings in Stripe. This activates the portal for your test environment. You'll need to do a similar check and configuration for your live environment.
 
-Once activated, the `check_user_subscription_status` tool will provide a direct link in the `billingPortal.url` field of its JSON response, which your users can use.
+Once activated, the checkout helper embedded in the subscription tools will provide a working billing portal URL that your users can follow to manage their plan.
 
 **Allowing Users to Switch Plans (Optional):**
 
@@ -183,7 +184,19 @@ By default, the billing portal allows users to cancel their existing subscriptio
 
 This configuration empowers your users to manage their subscriptions more flexibly directly through the Stripe-hosted portal.
 
-### Step 6: Complete Your Settings
+### Step 6: Configure Meta Ads Credentials
+
+To enable the built-in Meta Ads analytics tools you need a system user access token and the IDs for the ad account/business you want to report on.
+
+1. Go to [business.facebook.com/settings](https://business.facebook.com/settings) and open **Business Settings** for the business that owns the ad account.
+2. Under **Users → System Users**, create a system user (or reuse an existing one) and generate a token with the `ads_read` permission. Copy this token into `META_ADS_SYSTEM_USER_TOKEN`.
+3. Note the ad account you want to use by default. The ID is visible in Ads Manager (look for the number after `act=` in the URL). Save it to `META_ADS_DEFAULT_ACCOUNT_ID` without the `act_` prefix.
+4. Find the Business Manager ID on the Business Settings overview page and store it in `META_ADS_BUSINESS_ID`.
+5. Optionally override the API version with `META_ADS_API_VERSION` (defaults to `v19.0`).
+
+Once these values are in place the tools can query account overview, campaign/ad set/ad insights, and async report status out-of-the-box.
+
+### Step 7: Complete Your Settings
 
 Make sure your `.dev.vars` file has all these values:
 
@@ -195,6 +208,10 @@ GOOGLE_CLIENT_SECRET="your-google-client-secret"
 STRIPE_SECRET_KEY="your-stripe-secret-key"
 STRIPE_SUBSCRIPTION_PRICE_ID="your-stripe-price-id"
 STRIPE_METERED_PRICE_ID="your-stripe-metered-price-id"
+META_ADS_SYSTEM_USER_TOKEN="your-system-user-token"
+META_ADS_API_VERSION="v19.0"
+META_ADS_DEFAULT_ACCOUNT_ID="1234567890"
+META_ADS_BUSINESS_ID="your-business-id"
 ```
 
 For the `COOKIE_ENCRYPTION_KEY`, you can generate a random string with this command:
@@ -246,17 +263,31 @@ Or with Claude Desktop:
 
 Or with MCP Inspector:
 
-1. Run MCP Inspector and connect to your server:
+1. Start the dev server if it isn't already running: `npm run dev`
+2. In a second terminal run our shortcut script:
 ```bash
-npx @modelcontextprotocol/inspector@0.11.0 
+npm run inspector
 ```
+
+   This wraps the pinned `npx @modelcontextprotocol/inspector@0.11.0 http://localhost:8787/sse` command so you don't have to remember the exact syntax.
 
 > [!WARNING]
 > The latest version of MCP Inspector is 0.12.0 but using npx @modelcontextprotocol/inspector@latest doesn't work right now. Working on it.
 
-2. Enter your server URL: `http://localhost:8787/sse`
-3. Use the web interface to test and debug your tools
-4. You can directly call your tools, see the request/response data, and quickly iterate during development
+3. The inspector opens your server URL automatically. If you need to connect elsewhere you can still enter a different endpoint in the UI.
+4. Use the web interface to test and debug your tools—you can directly call your tools, see the request/response data, and quickly iterate during development.
+
+## Available Meta Ads MCP Tools
+
+Once authentication and billing are configured the MCP server exposes the following Meta Ads reporting tools:
+
+- `meta_ads_account_overview` – free tool that returns account details and high-level spend/impression metrics.
+- `meta_ads_campaign_insights` – subscription-gated campaign performance with optional breakdowns and filters.
+- `meta_ads_adset_insights` – subscription-gated ad set metrics aligned with the selected time range.
+- `meta_ads_ad_insights` – metered ad-level reporting that charges per request after an included free tier.
+- `meta_ads_async_report_status` – free helper that looks up the status of async insights report runs.
+
+Each tool accepts overrides for `adAccountId`, `datePreset` or `timeRange`, `fields`, `breakdowns`, and the raw Meta Ads filtering syntax so you can reproduce the same analytics available in the reference implementation.
 
 ### Step 9: Going Live (Deploying)
 
@@ -293,6 +324,18 @@ npx wrangler secret put STRIPE_METERED_PRICE_ID
 ```
    
    For the `BASE_URL`, use your Cloudflare URL: `https://your-worker-name.your-account.workers.dev`
+
+### Step 10: Push the worker from your main branch
+
+If you're tracking this project in Git, keep your remote `main` branch in sync with the version you deploy:
+
+```bash
+git checkout main
+git merge <your-feature-branch>
+git push origin main
+```
+
+This ensures the code running in Cloudflare matches the latest version committed to your primary branch.
 
 ## Creating Your Own Tools
 
